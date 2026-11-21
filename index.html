@@ -612,7 +612,7 @@ function visitView(){
     '<div class="erow"><div class="row"><label class="sw"><input type="checkbox" data-ch="auto"'+(auto?" checked":"")+'><span class="swt" aria-hidden="true"></span>حفظ آلي</label><button class="btn" data-act="vsave">حفظ</button><button class="btn ghost" data-act="back">رجوع</button></div></div>'+
     '<div class="erow"><label class="catsel"><span class="sr">الصنف</span><select data-ch="vcat" aria-label="الصنف"><option value="all"'+(cat==="all"?" selected":"")+'>كل الأصناف</option>'+CATS.map(c=>{const n=S.products.filter(p=>p.c===c.id&&(p.st==="ok"||p.st==="pending")).length,e=S.products.filter(p=>p.c===c.id&&v.entries[p.id]).length;return '<option value="'+c.id+'"'+(String(cat)===String(c.id)?" selected":"")+'>'+esc(c.name)+' ('+n+')'+(e?' · مُدخل '+e:'')+'</option>';}).join("")+'</select></label>'+
     '<label class="srch2" for="q">بحث<input id="q" type="search" data-in="q" value="'+esc(UI.q)+'"></label></div>'+
-    '<div class="tw etable"><table><thead><tr>'+th("n","اسم الصنف")+th("code","رمز الصنف")+th("b","العلامة التجارية")+th("c","التصنيف")+th("s","الكمية")+th("u","الوحدة")+th("p","السعر")+'</tr></thead><tbody>'+
+    '<div class="tw etable"><table><thead><tr>'+th("n","اسم الصنف")+th("c","التصنيف")+th("s","الكمية")+th("u","الوحدة")+th("p","السعر")+'</tr></thead><tbody>'+
     ps.map(p=>prow(v,p)).join("")+'</tbody></table></div>'+
     '<div class="row between"><span class="muted">عدد الأصناف '+ps.length+' من '+(cat==="all"?total:catCount)+'</span><span class="muted">المُدخل في الزيارة: <b id="vcount">'+entered+'</b></span></div></div>';
   if(cat!=="all"){
@@ -629,7 +629,7 @@ function visitView(){
 }
 function prow(v,p){
   const e=v.entries[p.id], up=e?upTxt(p,e.p):"";
-  return '<tr id="row-'+p.id+'"'+(e?' class="done"':'')+'><td class="pname">'+esc(p.n)+' '+esc(p.s!=null?sizeTxt(p):p.l)+(p.st==="pending"?' <span class="pill warn">جديد</span>':'')+'</td><td class="mono">'+pcode(p)+'</td><td>'+esc(p.b||"—")+'</td><td>'+esc(shortCat(p.c))+'</td><td class="mono">'+(p.s!=null?Number(p.s).toFixed(2):esc(p.l||"—"))+'</td><td>'+esc(p.u||"—")+'</td>'+
+  return '<tr id="row-'+p.id+'"'+(e?' class="done"':'')+'><td class="pname">'+esc(p.n)+' '+esc(p.s!=null?sizeTxt(p):p.l)+(p.st==="pending"?' <span class="pill warn">جديد</span>':'')+'</td><td>'+esc(shortCat(p.c))+'</td><td class="mono">'+(p.s!=null?Number(p.s).toFixed(2):esc(p.l||"—"))+'</td><td>'+esc(p.u||"—")+'</td>'+
     '<td class="pcell"><input type="number" inputmode="decimal" min="0" step="any" id="pr-'+p.id+'" data-ch="price" data-p="'+p.id+'" placeholder="0" aria-label="سعر '+esc(p.n+" "+sizeTxt(p))+'" value="'+(e?e.p:"")+'">'+(up?'<small class="up">'+up+'</small>':'')+'</td></tr>';
 }
 /* ---------- الفلاتر ---------- */
