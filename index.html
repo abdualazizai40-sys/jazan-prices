@@ -289,6 +289,8 @@ input[type=search]{width:100%}
 .pcell .up{display:block}
 
 @media(max-width:600px){.etable th:nth-child(2),.etable th:nth-child(3),.etable td:nth-child(2),.etable td:nth-child(3){display:none}.etable .pname{min-width:0;width:auto}.etable td{padding:10px 6px}.pcell{min-width:0;width:96px}.pcell input{width:84px;font-size:17px}}
+
+.etable tr.odd td{background:#fbe3df}.oddm{display:block;color:#a8321f;font-weight:600;font-size:12px;line-height:1.4}.rkpis small{display:block;font-size:11px;margin-top:2px}.rkpis small.hi{color:#a8321f}.rkpis small.lo{color:#1b7a4a}
 </style>
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><meta name="theme-color" content="#00524D"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="robots" content="noindex,nofollow">
 </head>
@@ -571,8 +573,8 @@ function loginView(){
   (UI.msg?'<div class="note crit">'+esc(typeof UI.msg==="string"?UI.msg:UI.msg.t)+'</div>':'')+'<button class="btn big" type="submit"'+(UI.loading?' disabled':'')+'>'+(UI.loading?'جارٍ الدخول…':'دخول')+'</button><p class="muted">الحسابات يصدرها مدير القسم. البيانات مشتركة بين جميع الأجهزة.</p></form></div>';
 }
 const TABS={emp:[["home","زياراتي"]],
-  sup:[["dash","المؤشرات"],["cmp","المقارنة"],["pmap","خريطة الأسعار"],["heat","المحافظات والأصناف"],["supp","الموردون"],["prod","المنتجات الجديدة والوحيدة"],["visits","الزيارات"],["map","مواقع الزيارات"],["rep","تقرير PDF"]],
-  mgr:[["dash","المؤشرات"],["cmp","المقارنة"],["pmap","خريطة الأسعار"],["heat","المحافظات والأصناف"],["supp","الموردون"],["prod","المنتجات الجديدة والوحيدة"],["visits","الزيارات"],["map","مواقع الزيارات"],["rep","تقرير PDF"],["users","المستخدمون"],["data","البيانات"]]};
+  sup:[["dash","المؤشرات"],["sum","ملخص الفترة"],["cmp","المقارنة"],["pmap","خريطة الأسعار"],["heat","المحافظات والأصناف"],["supp","الموردون"],["prod","المنتجات الجديدة والوحيدة"],["visits","الزيارات"],["map","مواقع الزيارات"],["rep","تقرير PDF"]],
+  mgr:[["dash","المؤشرات"],["sum","ملخص الفترة"],["cmp","المقارنة"],["pmap","خريطة الأسعار"],["heat","المحافظات والأصناف"],["supp","الموردون"],["prod","المنتجات الجديدة والوحيدة"],["visits","الزيارات"],["map","مواقع الزيارات"],["rep","تقرير PDF"],["users","المستخدمون"],["data","البيانات"]]};
 const TABN={acct:"حسابي"};
 function shell(){
   const u=me(), pend=S.products.filter(p=>p.st==="pending").length;
@@ -580,7 +582,7 @@ function shell(){
     '<div class="userrow"><div class="who"><span class="avatar">'+esc(u.name.charAt(0))+'</span><div><b>'+esc(u.name)+'</b><br><small>'+ROLE[u.role]+'</small></div></div><button class="chipw net" id="netst" data-act="sync" aria-label="مزامنة الآن">'+netText()+'</button>'+(u.role!=="emp"&&pend?'<button class="chipw pend" data-act="tab" data-v="prod">'+pend+' منتج بانتظار الاعتماد</button>':'')+'</div></header>';
   if(u.role!=="emp")h+='<nav class="tabs" aria-label="الأقسام">'+TABS[u.role].map(t=>'<button data-act="tab" data-v="'+t[0]+'" aria-pressed="'+(UI.tab===t[0])+'">'+t[1]+'</button>').join("")+'</nav>';
   if(UI.msg)h+='<div class="note '+(UI.msg.k||"info")+'">'+esc(UI.msg.t)+'</div>';
-  const V={acct:acctTab,home:empHome,dash:dash,cmp:cmp,heat:heat,supp:supp,prod:prodTab,visits:visitsTab,map:mapTab,pmap:pmapTab,rep:repTab,users:usersTab,data:dataTab};
+  const V={sum:sumTab,acct:acctTab,home:empHome,dash:dash,cmp:cmp,heat:heat,supp:supp,prod:prodTab,visits:visitsTab,map:mapTab,pmap:pmapTab,rep:repTab,users:usersTab,data:dataTab};
   return h+'<main class="stack">'+(UI.visit?visitView():(V[UI.tab]||V[TABS[u.role][0][0]])())+'</main>';
 }
 
@@ -596,6 +598,7 @@ const curVisit=()=>S.visits.find(v=>v.id===UI.visit);
 function pcode(p){if(p.st==="ok"&&p.id<=BASEN){const ps=S.products.filter(x=>x.c===p.c&&x.id<=BASEN);return "JZ"+String(p.c+1).padStart(2,"0")+String(ps.indexOf(p)+1).padStart(2,"0");}return "NEW"+String(p.id).slice(-5);}
 const shortCat=c=>CATS[c].name.replace(/\s*\(.*\)/,"").replace(/^ال/,"");
 function visitView(){
+  if(curVisit())buildRef(curVisit().id);
   const v=curVisit(), auto=S.autosave!==false, cat=UI.vcat, q=norm(UI.q);
   let ps=S.products.filter(p=>p.st==="ok"||p.st==="pending").filter(p=>cat==="all"||p.c===+cat).filter(p=>!q||norm(p.n+" "+p.b+" "+pcode(p)).includes(q));
   const k=UI.sort.k, dir=UI.sort.d;
@@ -629,10 +632,63 @@ function visitView(){
   h+='<datalist id="supnames">'+S.supNames.map(n=>'<option value="'+esc(n)+'">').join("")+'</datalist><datalist id="supregs">'+REGIONS.map(n=>'<option value="'+n+'">').join("")+'</datalist>';
   return h;
 }
+
+/* ---------- تنبيه السعر الشاذ ---------- */
+let REF={};
+function buildRef(exVid){const m={};S.visits.forEach(v=>{if(!v.done||v.id===exVid)return;Object.keys(v.entries).forEach(k=>{const e=v.entries[k];if(e&&e.p>0)(m[k]=m[k]||[]).push(e.p);});});
+  REF={};Object.keys(m).forEach(k=>{const a=m[k].slice().sort((x,y)=>x-y);if(a.length<2)return;const h=a.length>>1;REF[k]=a.length%2?a[h]:(a[h-1]+a[h])/2;});}
+function oddOf(pid,price){const r=REF[pid];if(!r||!(price>0))return null;const d=price/r-1;return d>=0.5||d<=-0.5?{d:d,r:r}:null;}
+function oddTxt(o){return '⚠ '+(o.d>0?'أعلى':'أقل')+' بـ '+Math.abs(Math.round(o.d*100))+'%<br>المعتاد '+Number(o.r).toFixed(2);}
+
+/* ---------- ملخص الفترة ---------- */
+function addDays(s,n){const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return ymd(d);}
+function periodPreset(k){const t=TODAY;if(k==="today")return[t,t];if(k==="7")return[addDays(t,-6),t];if(k==="30")return[addDays(t,-29),t];
+  if(k==="month")return[t.slice(0,8)+"01",t];if(k==="pmonth"){const d=new Date(t.slice(0,8)+"01T12:00:00");d.setDate(0);const e=ymd(d);return[e.slice(0,8)+"01",e];}return["",""];}
+function sumData(f,t){const vs=S.visits.filter(v=>v.done&&(!f||v.date>=f)&&(!t||v.date<=t)),rs=[];
+  vs.forEach(v=>Object.keys(v.entries).forEach(k=>{const p=PBY[k];const e=v.entries[k];if(!p||p.st==="rejected"||!(e.p>0))return;rs.push({pid:+k,p:e.p,gov:v.gov,ec:v.est.ec,est:v.est.uni||v.est.name,estn:v.est.name,emp:v.emp,t:v.t,vid:v.id,c:p.c,date:v.date});}));return{vs:vs,rs:rs};}
+function sumHTML(){
+  const f=UI.rf,t=UI.rt,D=sumData(f,t),emps=S.users.filter(x=>x.role==="emp");
+  const days=f&&t?Math.round((new Date(t+"T12:00:00")-new Date(f+"T12:00:00"))/864e5)+1:null;
+  const P=days?sumData(addDays(f,-days),addDays(f,-1)):null;
+  const period=(f||t)?"من "+(f||"البداية")+" إلى "+(t||TODAY):"كل الفترات";
+  const chg=(a,b)=>P?(b?'<small class="'+(a>=b?'lo':'hi')+'">'+(a>=b?'▲ ':'▼ ')+Math.abs(Math.round((a/b-1)*100))+'% عن الفترة السابقة</small>':'<small>لا بيانات في الفترة السابقة</small>'):'';
+  const nE=new Set(D.vs.map(v=>v.est.uni||v.est.name)).size,nG=new Set(D.vs.map(v=>v.gov)).size;
+  const rh=repHTML().split('<div class="rkpis">')[0].replace("تقرير رصد ومقارنة الأسعار","ملخص الفترة").replace(/منطقة جازان · [^<]*/,"منطقة جازان · "+period);
+  let h=rh+'<div class="rkpis"><div><b>'+D.vs.length+'</b><span>زيارة</span>'+chg(D.vs.length,P&&P.vs.length)+'</div><div><b>'+D.rs.length+'</b><span>سعراً مقروءاً</span>'+chg(D.rs.length,P&&P.rs.length)+'</div><div><b>'+nE+'</b><span>منشأة</span></div><div><b>'+nG+' / 17</b><span>محافظة</span></div></div>';
+  if(!D.vs.length)return h+'<section><p>لا توجد زيارات مرسلة في هذه الفترة.</p></section>';
+  h+='<section><h2>1. أداء المراقبين</h2><table><tr><th>المراقب</th><th>الزيارات</th><th>الأسعار</th><th>المحافظات</th><th>أسعار غير معتادة</th><th>آخر زيارة</th></tr>';
+  buildRef(null);
+  const oddR=D.rs.map(x=>{const o=oddOf(x.pid,x.p);return o?Object.assign({o:o},x):null;}).filter(Boolean);
+  emps.forEach(e=>{const vv=D.vs.filter(v=>v.emp===e.id),rr=D.rs.filter(x=>x.emp===e.id);
+    h+='<tr><td><b>'+esc(e.name)+'</b></td><td>'+vv.length+'</td><td>'+rr.length+'</td><td>'+new Set(vv.map(v=>v.gov)).size+'</td><td>'+oddR.filter(x=>x.emp===e.id).length+'</td><td>'+(vv.length?ymd(Math.max(...vv.map(v=>v.t))):"—")+'</td></tr>';});
+  h+='</table></section>';
+  const rel=relMap(D.rs.map(x=>Object.assign({},x,{est:x.est}))),g={};rel.forEach(x=>{(g[x.gov]=g[x.gov]||[]).push(x.rel);});
+  const gr=Object.keys(g).map(n=>({n:n,d:avg(g[n]),c:g[n].length})).sort((a,b)=>b.d-a.d);
+  const cls=d=>d>0.02?"hi":d<-0.02?"lo":"";
+  h+='<section><h2>2. المحافظات من الأغلى إلى الأرخص</h2>'+(gr.length?'<table><tr><th>#</th><th>المحافظة</th><th>الفرق عن متوسط المنطقة</th><th>القراءات</th></tr>'+gr.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+r.n+'</td><td class="'+cls(r.d)+'">'+pct(r.d)+'</td><td>'+r.c+'</td></tr>').join("")+'</table>':'<p>يلزم قراءة المنتج نفسه في منشأتين على الأقل لحساب الفرق.</p>')+'</section>';
+  if(P){const a=byProduct(D.rs),b=byProduct(P.rs);
+    const ch=Object.keys(a).filter(k=>b[k]&&PBY[k]).map(k=>{const x=avg(a[k].map(r=>r.p)),y=avg(b[k].map(r=>r.p));return{p:PBY[k],now:x,was:y,d:x/y-1};}).filter(r=>Math.abs(r.d)>=0.005);
+    const up=ch.filter(r=>r.d>0).sort((x,y)=>y.d-x.d).slice(0,10),dn=ch.filter(r=>r.d<0).sort((x,y)=>x.d-y.d).slice(0,10);
+    const tb=l=>'<table class="sm"><tr><th>المنتج</th><th>الحجم</th><th>الفترة السابقة</th><th>هذه الفترة</th><th>التغير</th></tr>'+l.map(r=>'<tr><td>'+esc(r.p.n)+'</td><td>'+esc(sizeTxt(r.p))+'</td><td>'+money(r.was)+'</td><td>'+money(r.now)+'</td><td class="'+cls(r.d)+'">'+pct(r.d)+'</td></tr>').join("")+'</table>';
+    h+='<section><h2>3. المنتجات الأكثر ارتفاعاً</h2><p>مقارنة متوسط سعر كل منتج بالفترة السابقة المساوية ('+addDays(f,-days)+' إلى '+addDays(f,-1)+').</p>'+(up.length?tb(up):'<p>لا توجد ارتفاعات مقارنة بالفترة السابقة.</p>')+'</section>';
+    h+='<section><h2>4. المنتجات الأكثر انخفاضاً</h2>'+(dn.length?tb(dn):'<p>لا توجد انخفاضات مقارنة بالفترة السابقة.</p>')+'</section>';}
+  else h+='<section><h2>3. تغيّر الأسعار</h2><p>اختر فترة بتاريخ بداية ونهاية لمقارنتها بالفترة السابقة المساوية لها.</p></section>';
+  const ex=Object.values(byProduct(D.rs)).filter(a=>new Set(a.map(x=>x.est)).size>1).map(a=>{const mn=a.reduce((x,y)=>y.p<x.p?y:x),mx=a.reduce((x,y)=>y.p>x.p?y:x);return{p:PBY[a[0].pid],mn:mn,mx:mx,d:mx.p/mn.p-1};}).sort((a,b)=>b.d-a.d).slice(0,10);
+  h+='<section><h2>'+(P?5:4)+'. أكبر فروقات الأسعار بين المنشآت</h2>'+(ex.length?'<table class="sm"><tr><th>المنتج</th><th>أقل سعر</th><th>أعلى سعر</th><th>الفرق</th></tr>'+ex.map(x=>'<tr><td>'+esc(x.p.n+" "+sizeTxt(x.p))+'</td><td>'+money(x.mn.p)+' <small>'+esc(x.mn.gov)+'</small></td><td>'+money(x.mx.p)+' <small>'+esc(x.mx.gov)+'</small></td><td class="hi">'+pct(x.d)+'</td></tr>').join("")+'</table>':'<p>لا توجد منتجات مقروءة في أكثر من منشأة.</p>')+'</section>';
+  h+='<section><h2>'+(P?6:5)+'. أسعار غير معتادة للمراجعة</h2><p>أسعار تبتعد 50% أو أكثر عن السعر المعتاد للمنتج نفسه.</p>'+(oddR.length?'<table class="sm"><tr><th>المنتج</th><th>السعر</th><th>المعتاد</th><th>الفرق</th><th>المنشأة</th><th>المحافظة</th><th>المراقب</th></tr>'+oddR.sort((a,b)=>Math.abs(b.o.d)-Math.abs(a.o.d)).slice(0,40).map(x=>'<tr><td>'+esc(PBY[x.pid].n+" "+sizeTxt(PBY[x.pid]))+'</td><td>'+money(x.p)+'</td><td>'+money(x.o.r)+'</td><td class="'+cls(x.o.d)+'">'+pct(x.o.d)+'</td><td>'+esc(x.estn)+'</td><td>'+esc(x.gov)+'</td><td>'+esc(uname(x.emp))+'</td></tr>').join("")+'</table>':'<p>لا توجد أسعار غير معتادة في الفترة.</p>')+'</section>';
+  return h;
+}
+function sumTab(){
+  const pr=[["today","اليوم"],["7","آخر 7 أيام"],["30","آخر 30 يوماً"],["month","هذا الشهر"],["pmonth","الشهر الماضي"],["all","كل الفترات"]];
+  return '<div class="card noprint"><h2>ملخص الفترة</h2><p class="muted">اختر أي فترة لعرض ملخص أداء المراقبين والأسعار، مقارنةً بالفترة السابقة المساوية لها.</p><div class="chips">'+pr.map(p=>'<button class="chip" data-act="sper" data-v="'+p[0]+'">'+p[1]+'</button>').join("")+'</div><div class="form">'+
+    '<label for="sf">من تاريخ<input id="sf" type="date" data-ch="rf" value="'+UI.rf+'"></label><label for="st">إلى تاريخ<input id="st" type="date" data-ch="rt" value="'+UI.rt+'"></label></div>'+
+    '<div class="row"><button class="btn" data-act="rpdf">تنزيل PDF</button><button class="btn ghost" data-act="rprint">طباعة</button></div></div>'+
+    '<div class="report" id="report">'+sumHTML()+'</div>';
+}
 function prow(v,p){
-  const e=v.entries[p.id], up=e?upTxt(p,e.p):"";
-  return '<tr id="row-'+p.id+'"'+(e?' class="done"':'')+'><td class="pname">'+esc(p.n)+' '+esc(p.s!=null?sizeTxt(p):p.l)+(p.st==="pending"?' <span class="pill warn">جديد</span>':'')+'</td><td class="mono">'+(p.s!=null?Number(p.s).toFixed(2):esc(p.l||"—"))+'</td><td>'+esc(p.u||"—")+'</td>'+
-    '<td class="pcell"><input type="number" inputmode="decimal" min="0" step="any" id="pr-'+p.id+'" data-ch="price" data-p="'+p.id+'" placeholder="0" aria-label="سعر '+esc(p.n+" "+sizeTxt(p))+'" value="'+(e?e.p:"")+'">'+(up?'<small class="up">'+up+'</small>':'')+'</td></tr>';
+  const e=v.entries[p.id], up=e?upTxt(p,e.p):"", od=e?oddOf(p.id,e.p):null;
+  return '<tr id="row-'+p.id+'"'+(e?' class="done'+(od?' odd':'')+'"':'')+'><td class="pname">'+esc(p.n)+' '+esc(p.s!=null?sizeTxt(p):p.l)+(p.st==="pending"?' <span class="pill warn">جديد</span>':'')+'</td><td class="mono">'+(p.s!=null?Number(p.s).toFixed(2):esc(p.l||"—"))+'</td><td>'+esc(p.u||"—")+'</td>'+
+    '<td class="pcell"><input type="number" inputmode="decimal" min="0" step="any" id="pr-'+p.id+'" data-ch="price" data-p="'+p.id+'" placeholder="0" aria-label="سعر '+esc(p.n+" "+sizeTxt(p))+'" value="'+(e?e.p:"")+'">'+(up?'<small class="up">'+up+'</small>':'')+(od?'<small class="oddm">'+oddTxt(od)+'</small>':'')+'</td></tr>';
 }
 /* ---------- الفلاتر ---------- */
 function filters(){
@@ -953,6 +1009,7 @@ document.addEventListener("click",ev=>{
     case "vsave":{const v=curVisit();v.est.uni=digits(v.est.uni);v.est.cr=digits(v.est.cr);
       if(!v.est.uni||!v.est.name||!v.gov||!v.est.ec){UI.emsg={k:"warn",t:"أكمل رقم السجل الموحد واسم المنشأة والمحافظة وفئة المنشأة قبل الحفظ."};window.scrollTo(0,0);break;}
       if(!Object.keys(v.entries).length){UI.emsg={k:"warn",t:"لم يُدخل أي سعر بعد."};break;}
+      {buildRef(v.id);const no=Object.keys(v.entries).filter(k=>oddOf(+k,v.entries[k].p)).length;if(no&&UI.oddOk!==v.id){UI.oddOk=v.id;UI.emsg={k:"warn",t:"يوجد "+no+" سعر غير معتاد (معلّم بالأحمر في الجدول). راجعها، ثم اضغط حفظ مرة أخرى للإرسال."};window.scrollTo(0,0);break;}}
       S.ests[v.est.uni]={uni:v.est.uni,cr:v.est.cr,name:v.est.name,gov:v.gov,ec:v.est.ec};
       if(!v.loc||!v.loc.lat)v.loc=locOf(v);
       v.done=true;v.t=Date.now();v.date=TODAY;
@@ -994,6 +1051,7 @@ document.addEventListener("click",ev=>{
     case "xlsx":exportXlsx();return;
     case "xemp":exportEmp();return;
     case "rpdf":exportPDF();return;
+    case "sper":{const r=periodPreset(d.v);UI.rf=r[0];UI.rt=r[1];break;}
     case "rprint":try{window.print();}catch(e){UI.msg={k:"warn",t:"الطباعة غير متاحة هنا. استخدم زر تنزيل PDF."};render();}return;
     case "msel":UI.msel=UI.msel===+d.id?null:+d.id;break;
     case "addu":addUser();return;
