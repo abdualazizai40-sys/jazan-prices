@@ -588,7 +588,7 @@ function shell(){
 function empHome(){
   const u=me(), mine=S.visits.filter(v=>v.emp===u.id).sort((a,b)=>b.t-a.t), drafts=mine.filter(v=>!v.done), done=mine.filter(v=>v.done);
   let h='<div class="card"><h2>قراءة جديدة</h2><p class="muted">القراءة مفتوحة: زر أي منشأة في أي محافظة، وأدخل ما تجده من المنتجات وسعره. إذا وجدت منتجاً غير مسجل أضفه من داخل صنفه.</p><button class="btn big" data-act="newvisit">زيارة منشأة</button></div>';
-  if(drafts.length)h+='<div class="card"><h2>زيارات غير مكتملة</h2><div class="list">'+drafts.map(v=>'<div class="item"><div class="row between"><b>'+esc(v.est.name||"منشأة بلا اسم")+'</b><button class="btn ghost sm" data-act="resume" data-id="'+v.id+'">متابعة</button></div><span class="muted">'+esc(v.gov||"")+' · '+Object.keys(v.entries).length+' سعراً</span></div>').join("")+'</div></div>';
+  if(drafts.length)h+='<div class="card"><h2>زيارات غير مكتملة</h2><div class="list">'+drafts.map(v=>'<div class="item"><div class="row between"><b>'+esc(v.est.name||"منشأة بلا اسم")+'</b><div class="row"><button class="btn ghost sm" data-act="resume" data-id="'+v.id+'">متابعة</button>'+(UI.del===v.id?'<button class="btn danger sm" data-act="delv2" data-id="'+v.id+'">تأكيد الحذف</button><button class="btn ghost sm" data-act="nodel">إلغاء</button>':'<button class="btn danger sm" data-act="delv" data-id="'+v.id+'">حذف</button>')+'</div></div><span class="muted">'+esc(v.gov||"بدون محافظة")+' · '+Object.keys(v.entries).length+' سعراً · '+esc(v.date||"")+'</span></div>').join("")+'</div></div>';
   h+='<div class="card"><h2>زياراتي المرسلة</h2>'+(done.length?'<div class="list">'+done.slice(0,15).map(v=>'<div class="item"><div class="row between"><b>'+esc(v.est.name)+'</b><span class="muted">'+fmt(v.t)+'</span></div><div class="row"><span class="pill">'+esc(v.gov)+'</span><span class="pill acc">فئة '+v.est.ec+'</span><span class="pill good">'+Object.keys(v.entries).length+' سعراً</span></div></div>').join("")+'</div>':'<p class="muted">لا توجد زيارات بعد.</p>')+'</div>';
   return h;
 }
@@ -989,7 +989,8 @@ document.addEventListener("click",ev=>{
       S.visits.forEach(v=>{if(v.entries[p.id]){if(!v.entries[to])v.entries[to]=v.entries[p.id];delete v.entries[p.id];}});p.st="rejected";p.mergedTo=to;log("دمج "+p.n+" مع "+PBY[to].n);UI.msg={k:"good",t:"دُمج "+p.n+" مع "+PBY[to].n+"، وانتقلت أسعاره إليه."};save();break;}
     case "vopen":UI.vopen=UI.vopen===+d.id?null:+d.id;break;
     case "delv":UI.del=+d.id;break;
-    case "delv2":{const v=S.visits.find(x=>x.id===+d.id);S.visits=S.visits.filter(x=>x!==v);log("حذف زيارة "+v.est.name);save();break;}
+    case "delv2":{const v=S.visits.find(x=>x.id===+d.id);if(v){S.visits=S.visits.filter(x=>x!==v);log("حذف زيارة "+(v.done?"":"غير مكتملة ")+(v.est.name||"بلا اسم"));save();}UI.del=null;break;}
+    case "nodel":UI.del=null;break;
     case "xlsx":exportXlsx();return;
     case "xemp":exportEmp();return;
     case "rpdf":exportPDF();return;
